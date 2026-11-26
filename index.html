@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ကိုယ်ပိုင် ဈေးရောင်း App</title>
+  <style>
+    * { box-sizing: border-box; font-family: sans-serif; }
+    body { margin: 0; background: #121212; color: #f5f5f5; }
+    header {
+      background: #1e1e1e; padding: 14px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #2c2c2c; position: sticky; top: 0; z-index: 10;
+    }
+    .brand { font-size: 18px; font-weight: bold; color: #f5b041; }
+    .btn {
+      background: #f5b041; color: #121212; border: none;
+      padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-outline {
+      background: transparent; color: #f5b041; border: 1px solid #f5b041;
+      padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    }
+    .container { padding: 16px; max-width: 720px; margin: auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .card {
+      background: #1e1e1e; border-radius: 12px; padding: 10px;
+      border: 1px solid #2c2c2c; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .card img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; background: #2a2a2a; }
+    .price { color: #58d68d; font-weight: bold; margin: 6px 0; }
+    input, textarea, select {
+      width: 100%; padding: 10px; margin: 6px 0 12px;
+      border-radius: 8px; border: 1px solid #3a3a3a;
+      background: #222; color: #fff;
+    }
+    .box {
+      background: #1e1e1e; padding: 16px; border-radius: 12px;
+      border: 1px solid #2c2c2c; margin-bottom: 16px;
+    }
+    .order-item {
+      background: #252525; padding: 12px; border-radius: 10px;
+      margin-bottom: 10px; border-left: 4px solid #f5b041;
+    }
+    .hidden { display: none; }
+    .msg { color: #58d68d; font-size: 14px; margin-top: 6px; }
+    .err { color: #ec7063; font-size: 14px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand" id="shopTitle">MY PRIVATE SHOP</div>
+  <div>
+    <button class="btn-outline" onclick="showView('shopView')">ဈေးဝယ်ရန်</button>
+    <button class="btn-outline" onclick="openAdminLogin()">Admin</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ဝယ်သူ ပစ္စည်းကြည့်ရန် အပိုင်း -->
+  <div id="shopView">
+    <h3>ရရှိနိုင်သော ပစ္စည်းများ</h3>
+    <div id="productList" class="grid">Loading...</div>
+
+    <!-- Order တင်ရန် Form -->
+    <div id="orderFormBox" class="box hidden" style="margin-top:20px;">
+      <h3>မှာယူမည့် ပစ္စည်း - <span id="selectedProductName"></span></h3>
+      <p>ဈေးနှုန်း - <span id="selectedProductPrice"></span></p>
+      <label>အရေအတွက်</label>
+      <input type="number" id="custQty" value="1" min="1" />
+      <label>ဝယ်သူ အမည်</label>
+      <input type="text" id="custName" placeholder="အမည် ထည့်ပါ" />
+      <label>ဖုန်းနံပါတ်</label>
+      <input type="tel" id="custPhone" placeholder="ဖုန်းနံပါတ် ထည့်ပါ" />
+      <label>ပို့ရမည့် လိပ်စာ</label>
+      <textarea id="custAddress" rows="2" placeholder="လိပ်စာ အပြည့်အစုံ ထည့်ပါ"></textarea>
+      <button class="btn" onclick="submitOrder()">Order တင်မည်</button>
+      <button class="btn-outline" onclick="cancelOrder()">မလုပ်တော့ပါ</button>
+      <div id="orderStatus"></div>
+    </div>
+  </div>
+
+  <!-- Admin PIN ဝင်ရန် -->
+  <div id="adminLoginView" class="box hidden">
+    <h3>Admin ဝင်ရန် PIN ရိုက်ပါ</h3>
+    <input type="password" id="adminPinInput" placeholder="PIN (Default: 1234)" />
+    <button class="btn" onclick="verifyAdminPin()">ဝင်မည်</button>
+    <div id="pinMsg" class="err"></div>
+  </div>
+
+  <!-- Admin Dashboard (ပစ္စည်းတင်ရန် + Order စာရင်းကြည့်ရန်) -->
+  <div id="adminView" class="hidden">
+    <div class="box">
+      <h3>ပစ္စည်းအသစ် တင်ရန်</h3>
+      <label>ပစ္စည်း အမည်</label>
+      <input type="text" id="prodName" placeholder="ဥပမာ - Wireless Earbuds" />
+      <label>ဈေးနှုန်း</label>
+      <input type="text" id="prodPrice" placeholder="ဥပမာ - 25,000 Ks" />
+      <label>ဓာတ်ပုံ Link (URL)</label>
+      <input type="text" id="prodImg" placeholder="https://..." />
+      <button class="btn" onclick="addProduct()">ပစ္စည်း ထည့်မည်</button>
+      <div id="prodStatus" class="msg"></div>
+    </div>
+
+    <div class="box">
+      <h3>ဝင်လာသော Order စာရင်းများ</h3>
+      <div id="orderList">Order မရှိသေးပါ။</div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK (Compat Version - အလွယ်ကူဆုံး) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+  // ၁။ ကိုယ့် Firebase Config ကို အောက်ပါနေရာတွင် အစားထိုးထည့်ပါ
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmem5c2xTWtfxDOPzpNPhc1qYtpyRZjLA",
+    authDomain: "chill-mal.firebaseapp.com",
+    databaseURL: "https://chill-mal-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "chill-mal",
+    storageBucket: "chill-mal.appspot.com",
+    messagingSenderId: "48183503134",
+    appId: "1:48183503134:web:5f1dec8501a61763ed810f"
+    };
+
+  // ၂။ ကိုယ့် Admin PIN ကို ပြင်နိုင်သည်
+  const ADMIN_PIN = "1234";
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let selectedProduct = null;
+
+  function showView(viewId) {
+    ["shopView", "adminLoginView", "adminView"].forEach(id => {
+      document.getElementById(id).classList.add("hidden");
+    });
+    document.getElementById(viewId).classList.remove("hidden");
+  }
+
+  function openAdminLogin() {
+    document.getElementById("adminPinInput").value = "";
+    document.getElementById("pinMsg").innerText = "";
+    showView("adminLoginView");
+  }
+
+  function verifyAdminPin() {
+    const pin = document.getElementById("adminPinInput").value.trim();
+    if (pin === ADMIN_PIN) {
+      showView("adminView");
+      loadOrders();
+    } else {
+      document.getElementById("pinMsg").innerText = "PIN မှားယွင်းနေပါသည်။";
+    }
+  }
+
+  function addProduct() {
+    const name = document.getElementById("prodName").value.trim();
+    const price = document.getElementById("prodPrice").value.trim();
+    const img = document.getElementById("prodImg").value.trim() || "https://via.placeholder.com/200?text=No+Image";
+    if (!name || !price) {
+      document.getElementById("prodStatus").innerText = "ပစ္စည်းအမည်နှင့် ဈေးနှုန်း ထည့်ပါ။";
+      return;
+    }
+    db.ref("products").push({ name, price, img }).then(() => {
+      document.getElementById("prodName").value = "";
+      document.getElementById("prodPrice").value = "";
+      document.getElementById("prodImg").value = "";
+      document.getElementById("prodStatus").innerText = "ပစ္စည်း တင်ပြီးပါပြီ။";
+    });
+  }
+
+  // ပစ္စည်းစာရင်းကို Real-time ဖတ်ပြခြင်း
+  db.ref("products").on("value", (snapshot) => {
+    const listEl = document.getElementById("productList");
+    listEl.innerHTML = "";
+    const data = snapshot.val();
+    if (!data) {
+      listEl.innerHTML = "<p>ပစ္စည်း မတင်ရသေးပါ။</p>";
+      return;
+    }
+    Object.keys(data).forEach((key) => {
+      const item = data[key];
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <div>
+          <img src="${item.img}" alt="${item.name}" />
+          <h4 style="margin:8px 0 4px;">${item.name}</h4>
+          <div class="price">${item.price}</div>
+        </div>
+        <button class="btn" onclick='selectProduct(${JSON.stringify(item.name)}, ${JSON.stringify(item.price)})'>မှာယူမည်</button>
+      `;
+      listEl.appendChild(div);
+    });
+  });
+
+  function selectProduct(name, price) {
+    selectedProduct = { name, price };
+    document.getElementById("selectedProductName").innerText = name;
+    document.getElementById("selectedProductPrice").innerText = price;
+    document.getElementById("orderStatus").innerHTML = "";
+    document.getElementById("orderFormBox").classList.remove("hidden");
+    document.getElementById("orderFormBox").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function cancelOrder() {
+    selectedProduct = null;
+    document.getElementById("orderFormBox").classList.add("hidden");
+  }
+
+  function submitOrder() {
+    if (!selectedProduct) return;
+    const qty = document.getElementById("custQty").value.trim();
+    const name = document.getElementById("custName").value.trim();
+    const phone = document.getElementById("custPhone").value.trim();
+    const address = document.getElementById("custAddress").value.trim();
+
+    if (!name || !phone || !address) {
+      document.getElementById("orderStatus").innerHTML = "<div class='err'>အမည်၊ ဖုန်းနံပါတ်နှင့် လိပ်စာ ပြည့်စုံစွာ ဖြည့်ပါ။</div>";
+      return;
+    }
+
+    db.ref("orders").push({
+      product: selectedProduct.name,
+      price: selectedProduct.price,
+      qty,
+      customerName: name,
+      phone,
+      address,
+      time: new Date().toLocaleString()
+    }).then(() => {
+      document.getElementById("orderStatus").innerHTML = "<div class='msg'>Order တင်ပြီးပါပြီ။ ကျေးဇူးတင်ပါသည်။</div>";
+      document.getElementById("custName").value = "";
+      document.getElementById("custPhone").value = "";
+      document.getElementById("custAddress").value = "";
+    });
+  }
+
+  // Admin ဘက်မှာ Order တွေ Real-time လာပေါ်စေရန်
+  function loadOrders() {
+    db.ref("orders").on("value", (snapshot) => {
+      const orderEl = document.getElementById("orderList");
+      const data = snapshot.val();
+      if (!data) {
+        orderEl.innerHTML = "<p>Order မရှိသေးပါ။</p>";
+        return;
+      }
+      orderEl.innerHTML = "";
+      Object.values(data).reverse().forEach((ord) => {
+        const div = document.createElement("div");
+        div.className = "order-item";
+        div.innerHTML = `
+          <strong>${ord.product}</strong> (x${ord.qty}) — <span style="color:#58d68d;">${ord.price}</span><br/>
+          ဝယ်သူ - ${ord.customerName} (${ord.phone})<br/>
+          လိပ်စာ - ${ord.address}<br/>
+          <small style="color:#aaa;">${ord.time}</small>
+        `;
+        orderEl.appendChild(div);
+      });
+    });
+  }
+</script>
+</body>
+</html>
